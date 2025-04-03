@@ -1,0 +1,21 @@
+.contact-list {
+    list-style: none;
+    padding: 0;
+  }
+  .contact-list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1em;
+    font-size: 1.1em;
+  }
+  .contact-list i {
+    margin-right: 0.5em;
+    color: #666;
+  }
+  .contact-list strong {
+    margin-right: 0.3em;
+  }
+
+.contact-list i.fa-telegram-plane { color: #0088cc; } /* 텔레그램 색상 */
+.contact-list i.fa-discord { color: #7289da; } /* 디스코드 색상 */
+.contact-list i.fa-envelope { color: hsl(291, 97%, 40%); } /* 네이버 메일 색상 */
