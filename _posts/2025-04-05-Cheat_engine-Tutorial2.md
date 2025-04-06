@@ -1,13 +1,13 @@
 ---
 layout: post
-title: "[Cheat Engine] 튜토리얼: Step 2"
+title: "[Cheat Engine] Tutorial: Step 2"
 date: 2025-04-06 19:00:00 +0900
 categories: [Reversing, CheatEngine]
 tags: [Reversing, CheatEngine, Tutorial]
 comments: true
 ---
 
-> 이 포스팅에서는 Cheat Engine 튜토리얼의 Step 2를 다룹니다. <br> 해당 튜토리얼은 x32를 기준으로 작성합니다:
+> 이 포스팅에서는 Cheat Engine 튜토리얼의 Step 2를 다룹니다:  <br> 해당 튜토리얼은 x32를 기준으로 작성합니다.
 >  
 > - Step 2 요구사항  
 > - Step 2 풀이  
