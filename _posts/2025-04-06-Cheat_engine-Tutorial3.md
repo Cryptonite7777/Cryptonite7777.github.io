@@ -34,7 +34,7 @@ Cheat Engine 튜토리얼의 Step 3(`000004D18-Tutorial-i386.exe`)를 열면 다
 ## Step 3: 풀이
 
 ### 1. 알 수 없는 초기 값 스캔하기
-"Health" 값이 0~500 사이의 임의의 값으로 시작하므로 초기 값을 모릅니다. 이 경우 Cheat Engine의 `Unknown initial value` 기능을 활용합니다.
+"Health" 값이 0~500 사이의 임의의 값으로 시작하므로 초기 값을 모릅니다.<br>이 경우 Cheat Engine의 `Unknown initial value` 기능을 활용합니다.
 
 - Cheat Engine에서 튜토리얼 프로세스(`000004D18-Tutorial-i386.exe`)를 선택합니다.
 - **Scan Type(스캔 유형)**을 `Unknown initial value`로 설정합니다.
