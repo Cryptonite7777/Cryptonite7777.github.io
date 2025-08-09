@@ -25,16 +25,16 @@ description: >- # used by seo meta and the atom feed
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
 url: "https://Cryptonite7777.github.io"
 
-# github:
-#  username: Cryptonite7777 # change to your GitHub username
+github:
+ username: Cryptonite7777 # change to your GitHub username
 
 # twitter:
 # username: twitter_username # change to your Twitter username
 
-# social:
+social:
   # Change to your full name.
   # It will be displayed as the default author of the posts and the copyright owner in the Footer
-  # name: Cryptonite7777
+  name: Cryptonite7777
   # email: cryptonite7777@protonmail.com # change to your email address
   # links:
     # The first element serves as the copyright owner's link
