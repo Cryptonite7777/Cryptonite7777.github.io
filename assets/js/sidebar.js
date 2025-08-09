@@ -1,16 +1,39 @@
+const sidebar = document.querySelector('#sidebar');
+let hoverTimeout = null;
+
+// 마우스 올림: 즉시 확장
+sidebar.addEventListener('mouseenter', () => {
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout);
+    hoverTimeout = null;
+  }
+  sidebar.classList.add('expanded');
+  sidebar.classList.remove('collapsed');
+});
+
+// 마우스 나감: 200ms 후 축소
+sidebar.addEventListener('mouseleave', () => {
+  hoverTimeout = setTimeout(() => {
+    sidebar.classList.remove('expanded');
+    sidebar.classList.add('collapsed');
+  }, 200);
+});
+
+// 초기 상태는 collapsed 로 세팅
+sidebar.classList.add('collapsed');
+
+// 링크 클릭 시
 document.querySelectorAll('#sidebar ul li.nav-item a.nav-link').forEach(link => {
-  link.addEventListener('click', (event) => {
-    event.preventDefault(); // 기본 동작 방지
+  link.addEventListener('click', event => {
+    event.preventDefault();
     const href = link.getAttribute('href');
-    
-    // CSS 변수 값 읽어오기
-    const sidebar = document.querySelector('#sidebar');
-    const sidebarWidth = getComputedStyle(sidebar).getPropertyValue('--sidebar-width').trim();
-    
-    sidebar.style.width = sidebarWidth; // SCSS 값과 동일하게 설정
-    
+
+    // 클릭 시 강제로 확장 상태로 변경
+    sidebar.classList.add('expanded');
+    sidebar.classList.remove('collapsed');
+
     setTimeout(() => {
-      window.location.href = href; // 페이지 이동
+      window.location.href = href;
     }, 130);
   });
 });

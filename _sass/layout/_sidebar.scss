@@ -5,34 +5,28 @@
 
 $btn-border-width: 3px;
 $btn-mb: 0.5rem;
-$sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
+$sidebar-display: 'sidebar-display';
 
 #sidebar {
   @include mx.pl-pr(0);
-
   position: fixed;
   top: 0;
   left: 0;
   height: 100%;
   overflow-y: auto;
-  width: 60px; /* 얇은 상태의 기본 너비 */
-  background: none;
-  transition: width 0.3s ease; /* 너비 변화에 애니메이션 적용 */
-
-  /* 호버 시 전체 너비로 확장 */
-  &:hover {
-    width: v.$sidebar-width;
-  }
+  background: transparent;
+  transform-origin: left center;
+  transition: transform 0.3s ease, width 0.3s ease;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05);
+ // border-right: 2px solid rgba(0, 255, 128, 0.5);
 
   &::before {
     content: "";
     position: absolute;
     inset: 0;
-    background-image: url('/assets/img/sidebar-bg.png');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.4;
+    background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,255,128,0.1) 100%),
+                url('/assets/img/sidebar-bg.png') center/cover no-repeat;
+    opacity: 0.6;
     z-index: 0;
     pointer-events: none;
   }
@@ -42,283 +36,172 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     z-index: 1;
     height: 100%;
     @include mx.pl-pr(0);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
 
+  /* 기본 스크롤 숨김 */
   -ms-overflow-style: none;
   scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 
-  &::-webkit-scrollbar {
-    display: none;
+  /* 축소 상태 */
+  &.collapsed, &:not(.expanded) {
+    width: 70px;
+    transform: translateX(0) scaleX(1);
   }
 
-  /* 모바일: 기존 동작 유지 */
-  @include bp.lt(bp.get(lg)) {
-    @include mx.slide;
-    width: v.$sidebar-width; /* 모바일에서는 전체 너비 고정 */
-    transform: translateX(-#{v.$sidebar-width});
-    -webkit-transform: translateX(-#{v.$sidebar-width});
+  /* 확장 상태 */
+  &.expanded {
+    width: v.$sidebar-width;
+    transform: translateX(0) scaleX(1);
+  }
 
-    [#{$sidebar-display}] & {
+  /* 모바일 초기 숨김 */
+  @include bp.lt(bp.get(lg)) {
+    transform: translateX(-100%);
+    &[#{$sidebar-display}] {
       transform: translateX(0);
     }
-
-    /* 모바일에서는 호버 효과 제거 */
-    &:hover {
-      width: v.$sidebar-width; /* 호버 시 너비 변화 없음 */
-    }
+    width: v.$sidebar-width;
   }
 
-  @include bp.xxxl {
-    width: 80px; /* 얇은 상태에서 조금 더 넓게 */
-    &:hover {
-      width: v.$sidebar-width-large;
-    }
-  }
-
-  %sidebar-link-hover {
-    &:hover {
-      color: var(--sidebar-active-color);
-    }
-  }
-
-  a {
-    @extend %sidebar-links;
-  }
-
+  /* 프로필 */
   .profile-wrapper {
     @include mx.mt-mb(2.5rem);
     @extend %clickable-transition;
-
     padding-left: 1rem;
     padding-right: 1.25rem;
-    width: 100%;
-
-    @include bp.lg {
-      margin-top: 3rem;
-    }
-
-    @include bp.xxxl {
-      margin-top: 3.5rem;
-      margin-bottom: 2.5rem;
-      padding-left: 1.5rem;
-    }
+    text-align: center;
 
     .site-title,
     .site-subtitle {
       opacity: 0;
-      transition: opacity 0.3s ease;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
     }
   }
 
-  /* 호버 시 프로필 텍스트 표시 */
-  &:hover .profile-wrapper {
-    padding-left: 2.5rem;
+  /* 확장 시 프로필 텍스트 표시 */
+  &.expanded .profile-wrapper,
+  &[#{$sidebar-display}] .profile-wrapper {
     .site-title,
     .site-subtitle {
       opacity: 1;
+      visibility: visible;
     }
   }
 
   .site-title {
-    @extend %clickable-transition;
-    @extend %sidebar-link-hover;
-
-    font-family: inherit;
     font-weight: 900;
-    font-size: 1.75rem;
-    line-height: 1.2;
-    letter-spacing: 0.25px;
-    margin-top: 1.25rem;
-    margin-bottom: 0.5rem;
-    width: fit-content;
-    color: var(--site-title-color);
+    font-size: 1.6rem;
+    color: var(--site-title-color, #0f0);
   }
 
   .site-subtitle {
-    font-size: 95%;
-    color: var(--site-subtitle-color);
-    margin-top: 0.25rem;
-    word-spacing: 1px;
-    user-select: none;
+    font-size: 0.9rem;
+    color: var(--site-subtitle-color, #0f0);
   }
 
+  /* 네비게이션 */
   ul {
-    margin-bottom: 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 
     li.nav-item {
-      opacity: 0.9;
       width: 100%;
-      @include mx.pl-pr(1.5rem);
-
-      @include bp.xxxl {
-        @include mx.pl-pr(2.75rem);
-      }
 
       a.nav-link {
-        @include mx.pt-pb(0.6rem);
         display: flex;
         align-items: center;
-        justify-content: center; /* 아이콘 중앙 정렬 */
-        border-radius: 0.75rem;
-        font-weight: 600;
-
-        &:hover {
-          background-color: #08f2893a;
-        }
+        justify-content: center; /* 축소 상태: 아이콘 중앙 정렬 */
+        border-radius: 0.5rem;
+        padding: 0.6rem 0.8rem;
+        color: var(--sidebar-link-color, #ccc);
+        text-decoration: none;
+        transition: background-color 0.3s, color 0.3s;
 
         i {
-          font-size: 1.2rem; /* 아이콘 크기 키움 */
-          opacity: 0.8;
-          margin-right: 0; /* 마진 제거 */
-          min-width: 20px; /* 아이콘 공간 확보 */
+          font-size: 1.3rem;
+          min-width: 20px;  /* 아이콘 공간 고정 */
+          margin-right: 0;   /* 축소 상태 마진 없음 */
+          transition: margin-right 0.3s ease;
         }
 
         span {
-          font-size: 90%;
-          letter-spacing: 0.2px;
+          margin-left: 1rem;
           opacity: 0;
-          transition: opacity 0.3s ease;
-          display: none; /* 텍스트 숨김 */
+          visibility: hidden;
+          transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        &:hover {
+          background-color: rgba(0,255,128,0.15);
+          color: #0f0;
         }
       }
 
-      &.active {
-        .nav-link {
-          color: #30ba39;
-        }
-      }
-
-      &:not(:first-child) {
-        margin-top: 0.25rem;
+      &.active a.nav-link {
+        color: #0f0;
       }
     }
   }
 
-  /* 호버 시 내비게이션 텍스트 표시 */
-  &:hover ul li.nav-item a.nav-link {
-    justify-content: flex-start; /* 확장 상태에서 왼쪽 정렬 */
+  /* 확장 시 아이콘 좌측정렬 + 텍스트 표시 */
+  &.expanded ul li.nav-item a.nav-link {
+    justify-content: flex-start;
+
     i {
-      font-size: 95%; /* 원래 크기로 복원 */
-      margin-right: 1.5rem; /* 마진 복원 */
+      margin-right: 1rem;
     }
     span {
-      display: inline; /* 텍스트 표시 */
       opacity: 1;
+      visibility: visible;
     }
   }
 
+  /* 하단 버튼 */
   .sidebar-bottom {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    margin-bottom: 1.5rem;
-    display: none; /* 기본적으로 숨김 */
-
-    @include bp.xxxl {
-      padding-left: 1.5rem;
-      margin-bottom: 1.75rem;
-    }
-
-    /* 호버 시 표시 */
-    #sidebar:hover & {
-      display: flex; /* 확장 상태에서 표시 */
-      padding-left: 2rem;
-    }
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
 
     $btn-size: 1.75rem;
 
-    %button {
+    a, #mode-toggle {
       width: $btn-size;
       height: $btn-size;
-      margin-bottom: $btn-mb;
       border-radius: 50%;
-      color: var(--sidebar-btn-color);
-      background-color: var(--sidebar-btn-bg);
-      text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-
-      &:not(:focus-visible) {
-        box-shadow: var(--sidebar-border-color) 0 0 0 1px;
-      }
+      background-color: var(--sidebar-btn-bg, #111);
+      color: var(--sidebar-btn-color, #0f0);
+      transition: background-color 0.3s;
 
       &:hover {
-        background-color: var(--sidebar-hover-bg);
-      }
-    }
-
-    a {
-      @extend %button;
-      @extend %sidebar-link-hover;
-      @extend %clickable-transition;
-
-      &:not(:last-child) {
-        margin-right: v.$sb-btn-gap;
-
-        @include bp.xxxl {
-          margin-right: v.$sb-btn-gap-lg;
-        }
-      }
-    }
-
-    i {
-      line-height: $btn-size;
-    }
-
-    #mode-toggle {
-      @extend %button;
-      @extend %sidebar-links;
-      @extend %sidebar-link-hover;
-    }
-
-    .icon-border {
-      @extend %no-cursor;
-      @include mx.ml-mr(calc((v.$sb-btn-gap - $btn-border-width) / 2));
-
-      background-color: var(--sidebar-btn-color);
-      content: '';
-      width: $btn-border-width;
-      height: $btn-border-width;
-      border-radius: 50%;
-      margin-bottom: $btn-mb;
-
-      @include bp.xxxl {
-        @include mx.ml-mr(calc((v.$sb-btn-gap-lg - $btn-border-width) / 2));
+        background-color: rgba(0,255,128,0.2);
       }
     }
   }
-}
 
-/* 모바일에서 텍스트 항상 표시 */
-@include bp.lt(bp.get(lg)) {
-  [#{$sidebar-display}] #sidebar {
-    .profile-wrapper {
-      .site-title,
-      .site-subtitle {
-        opacity: 1;
-      }
-    }
-    ul li.nav-item a.nav-link {
-      justify-content: flex-start;
-      i {
-        font-size: 95%;
-        margin-right: 1.5rem;
-      }
-      span {
-        display: inline;
-        opacity: 1;
-      }
-    }
-    .sidebar-bottom {
-      display: flex; /* 모바일에서 항상 표시 */
-    }
+  /* 확장 시 하단 버튼 보임 */
+  &.expanded .sidebar-bottom,
+  &[#{$sidebar-display}] .sidebar-bottom {
+    opacity: 1;
+    visibility: visible;
   }
 }
 
-[#{$sidebar-display}] {
-  #main-wrapper {
-    @include bp.lt(bp.get(lg)) {
-      transform: translateX(v.$sidebar-width);
-    }
+/* 모바일에서 메인 콘텐츠 이동 */
+[#{$sidebar-display}] #main-wrapper {
+  @include bp.lt(bp.get(lg)) {
+    transform: translateX(v.$sidebar-width);
+    transition: transform 0.3s ease;
   }
 }
