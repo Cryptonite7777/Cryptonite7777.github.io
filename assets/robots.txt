@@ -4,7 +4,7 @@ permalink: /robots.txt
 ---
 
 User-agent: *
-Disallow :
 
-Sitemap: https://Cryptonite7777.github.io/sitemap.xml
+Disallow: /norobots/
 
+Sitemap: {{ '/sitemap.xml' | absolute_url }}

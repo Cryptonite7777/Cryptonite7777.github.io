@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://cryptonite7777.github.io/sitemap.xml
