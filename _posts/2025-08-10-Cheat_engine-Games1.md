@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "[Cheat Engine] Games: Step 1"
-date: 2025-04-10 16:00:00 +0900
+date: 2025-08-10 16:00:00 +0900
 categories: [Reversing, CheatEngine]
 tags: [Reversing, CheatEngine, Tutorial, Games]
 comments: true
