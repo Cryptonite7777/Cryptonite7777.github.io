@@ -52,7 +52,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     display: none;
   }
 
-
   /* 모바일: 기존 동작 유지 */
   @include bp.lt(bp.get(lg)) {
     @include mx.slide;
@@ -70,7 +69,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 
-
   @include bp.xxxl {
     width: 80px;
 
@@ -79,18 +77,15 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 
-
   %sidebar-link-hover {
     &:hover {
       color: var(--sidebar-active-color);
     }
   }
 
-
   a {
     @extend %sidebar-links;
   }
-
 
   .profile-wrapper {
     @include mx.mt-mb(2.5rem);
@@ -120,7 +115,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 
-
   &:hover .profile-wrapper {
     padding-left: 2.5rem;
 
@@ -129,7 +123,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
       opacity: 1;
     }
   }
-
 
   .site-title {
     @extend %clickable-transition;
@@ -144,7 +137,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     width: fit-content;
   }
 
-
   .site-subtitle {
     font-size: 95%;
     color: var(--site-subtitle-color);
@@ -152,7 +144,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     word-spacing: 1px;
     user-select: none;
   }
-
 
   ul {
     margin-bottom: 2rem;
@@ -218,7 +209,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 
-
   &:hover ul li.nav-item a.nav-link {
     justify-content: flex-start;
 
@@ -233,7 +223,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
       opacity: 1;
     }
   }
-
 
   .sidebar-bottom {
     padding-left: 1rem;
@@ -321,8 +310,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
   }
 }
 
-
-
 /* 모바일에서 텍스트 항상 표시 */
 @include bp.lt(bp.get(lg)) {
   [#{$sidebar-display}] #sidebar {
@@ -354,7 +341,6 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 }
-
 
 [#{$sidebar-display}] {
   #main-wrapper {
