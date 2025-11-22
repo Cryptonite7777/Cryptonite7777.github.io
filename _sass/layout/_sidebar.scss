@@ -8,6 +8,7 @@ $btn-border-width: 3px;
 $btn-mb: 0.5rem;
 $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
 
+
 #sidebar {
   @include mx.pl-pr(0);
 
@@ -16,7 +17,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
   left: 0;
   height: 100%;
   overflow-y: auto;
-  width: 60px; /* 얇은 상태의 기본 너비 */
+  width: 60px;
   background: none;
   transition: width 0.3s ease;
 
@@ -51,10 +52,12 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     display: none;
   }
 
+
   /* 모바일: 기존 동작 유지 */
   @include bp.lt(bp.get(lg)) {
     @include mx.slide;
-    width: v.$sidebar-width; /* 모바일에서는 전체 너비 고정 */
+
+    width: v.$sidebar-width;
     transform: translateX(-#{v.$sidebar-width});
     -webkit-transform: translateX(-#{v.$sidebar-width});
 
@@ -63,16 +66,19 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
 
     &:hover {
-      width: v.$sidebar-width; /* 모바일에서 호버시 변화 없음 */
+      width: v.$sidebar-width;
     }
   }
 
+
   @include bp.xxxl {
     width: 80px;
+
     &:hover {
       width: v.$sidebar-width-large;
     }
   }
+
 
   %sidebar-link-hover {
     &:hover {
@@ -80,9 +86,11 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 
+
   a {
     @extend %sidebar-links;
   }
+
 
   .profile-wrapper {
     @include mx.mt-mb(2.5rem);
@@ -112,6 +120,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 
+
   &:hover .profile-wrapper {
     padding-left: 2.5rem;
 
@@ -120,6 +129,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
       opacity: 1;
     }
   }
+
 
   .site-title {
     @extend %clickable-transition;
@@ -134,6 +144,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     width: fit-content;
   }
 
+
   .site-subtitle {
     font-size: 95%;
     color: var(--site-subtitle-color);
@@ -141,6 +152,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     word-spacing: 1px;
     user-select: none;
   }
+
 
   ul {
     margin-bottom: 2rem;
@@ -156,21 +168,22 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
 
       a.nav-link {
         @include mx.pt-pb(0.6rem);
+
         display: flex;
         align-items: center;
-        justify-content: center; /* 기본: 아이콘 중앙 정렬 */
+        justify-content: center;
         border-radius: 0.75rem;
         font-weight: 600;
         color: var(--text-muted);
         transition: background-color 0.25s ease, color 0.25s ease;
 
         &:hover {
-          background-color: rgba(8, 242, 137, 0.25);
+          background-color: rgb(8 242 137 / 25%);
           color: var(--sidebar-active-color);
         }
 
         i {
-          font-size: 1.3rem; /* 아이콘을 약간 키움 */
+          font-size: 1.3rem;
           opacity: 0.85;
           margin-right: 0;
           min-width: 20px;
@@ -183,7 +196,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
           letter-spacing: 0.2px;
           opacity: 0;
           transition: opacity 0.3s ease;
-          display: none; /* 기본 숨김 */
+          display: none;
           color: var(--text-primary);
         }
       }
@@ -205,13 +218,13 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     }
   }
 
-  /* 호버 시 내비게이션 텍스트 표시 및 아이콘 위치/크기 변경 */
+
   &:hover ul li.nav-item a.nav-link {
-    justify-content: flex-start; /* 텍스트 표시 시 왼쪽 정렬 */
+    justify-content: flex-start;
 
     i {
-      font-size: 1.1rem; /* 아이콘 크기 조금 줄임 */
-      margin-right: 1.5rem; /* 텍스트와 간격 */
+      font-size: 1.1rem;
+      margin-right: 1.5rem;
       color: var(--sidebar-active-color);
     }
 
@@ -220,6 +233,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
       opacity: 1;
     }
   }
+
 
   .sidebar-bottom {
     padding-left: 1rem;
@@ -290,6 +304,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
 
     .icon-border {
       @extend %no-cursor;
+
       @include mx.ml-mr(calc((v.$sb-btn-gap - $btn-border-width) / 2));
 
       background-color: var(--sidebar-btn-color);
@@ -306,6 +321,8 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
   }
 }
 
+
+
 /* 모바일에서 텍스트 항상 표시 */
 @include bp.lt(bp.get(lg)) {
   [#{$sidebar-display}] #sidebar {
@@ -315,24 +332,29 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
         opacity: 1;
       }
     }
+
     ul li.nav-item a.nav-link {
       justify-content: flex-start;
+
       i {
         font-size: 1.1rem;
         margin-right: 1.5rem;
         color: var(--sidebar-active-color);
       }
+
       span {
         display: inline;
         opacity: 1;
         color: var(--text-primary);
       }
     }
+
     .sidebar-bottom {
       display: flex;
     }
   }
 }
+
 
 [#{$sidebar-display}] {
   #main-wrapper {
