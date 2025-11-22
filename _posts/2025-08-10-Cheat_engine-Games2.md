@@ -7,167 +7,165 @@ tags: [Reversing, CheatEngine, Tutorial, Games]
 comments: true
 ---
 
-> 이 포스팅에서는 Cheat Engine의 Games Step 2를 다룹니다: <br> 해당 튜토리얼은 x32를 기준으로 작성합니다.
->  
-> - Step 2 요구사항  
-> - Step 2 풀이  
-> - 결과  
-{: .prompt-info}
+Games Step 2는 단순히 플레이어의 체력을 고정시키는 수준을 넘어서,  
+**플레이어와 적의 구조체를 구분하고, 오직 적에게만 데미지가 들어가도록 코드를 조작하는 과정**을 다루고 있다.  
+튜토리얼 파트에서 배웠던 "값 스캔 → 포인터 추적 → 코드 인젝션" 흐름을 실제 게임에 그대로 적용해보는 단계라고 보면 된다.
 
-## Step 2: 개요 및 요구사항
-Cheat Engine의 Games Step 2(`gtutorial-i386.exe`)를 열면 다음과 같은 창이 나타납니다.
+---
 
-![Step 2 게임 실행 화면](assets/img/CheatEngine/Games2/1.png)  
+## 1. 게임 실행과 환경 파악
+
+게임을 실행하면 플레이어와 두 개의 타깃(Target 1, Target 2)이 등장한다.  
+각 개체는 체력을 가지고 있고, 총알 또는 충돌에 의해 체력이 깎이거나 파괴된다.
+
+<img src="assets/img/CheatEngine/Games2/1.png" width="55%" style="display:block; margin:0 auto;">
 *게임 실행 시 화면*
 
-창에 표시된 지시사항은 다음과 같습니다.
+이 단계에서 우리가 목표로 하는 것은 다음과 같다.
 
-> These two enemies have more health and do more damage to you than you do to them. Destroy them.  
-> Tip/Warning: Enemy and player are related  
-> (Click to hide)
-
-### 게임 동작 방식 파악
-게임을 실행하고 동작 방식을 파악해보았습니다.
-
-- 플레이어가 총알을 한 발 쏘면, 적으로부터 각각 1발씩 공격을 받아 플레이어의 체력이 감소합니다.
-- 플레이어의 체력은 우측 하단에 "Player Health"로 표시되며, 초기값은 100입니다.
-- 적의 체력은 상단에 체력 바로 표시됩니다.
-
-### 핵심 요구사항
-
-- **적 파괴**: 두 적의 체력을 0으로 만들어 파괴해야 합니다.
-- **팁 활용**: "Enemy and player are related"라는 팁을 활용하여 문제를 해결해야 합니다.
-
-이제 이 요구사항을 하나씩 해결해보겠습니다.
+- 플레이어와 적의 체력 주소를 모두 찾아낸다.  
+- 체력을 감소시키는 공통 코드를 분석한다.  
+- 구조체 내부에서 "누가 맞았는지" 구분할 수 있는 필드를 찾는다.  
+- 플레이어는 데미지를 받지 않고, 적만 데미지를 받도록 코드 인젝션을 작성한다.
 
 ---
 
-## Step 2: 풀이
+## 2. 플레이어 체력 주소 찾기
 
-### 1. 해결 방법 고민
-게임의 동작 방식을 바탕으로 문제를 해결할 수 있는 몇 가지 접근법을 생각해볼 수 있습니다.
+먼저 화면에 표시된 플레이어 체력을 기준으로 Exact Value 검색을 진행한다.  
+체력이 변할 때마다 값을 갱신하면서 Next Scan을 반복하면, 플레이어 체력 주소 하나만 남게 된다.
 
-1. **플레이어 체력 변조**: 플레이어의 체력 값을 고정하거나 높여서 적의 공격을 무력화 하는방법.
-2. **적 체력 변조**: 적의 체력 값을 직접 줄여서 빠르게 파괴하는 방법.
-
-우선 일반적인 방법(체력 변조)으로 접근해보고, 이후 팁을 활용한 방법으로 문제를 해결해보겠습니다.
-
----
-
-### 2. 플레이어 체력 검색 (4 Bytes)
-우측 하단에 표시된 플레이어 체력 값을 기준으로 검색을 시작했습니다.
-- **Scan Type(스캔 유형)**: `Exact Value`
-- **Value Type(값 유형)**: `4 Bytes` (체력 값이 정수로 보이므로 4 Bytes로 설정).
-- 초기 체력 값 `100`을 검색 → 여러 주소 발견.
-- 적에게 공격받아 체력이 감소한 후(예: `92`) 다시 검색 → 주소 `01AECD80` 발견.
-
-![Step 2 플레이어 체력 검색](assets/img/CheatEngine/Games2/2.png)  
+<img src="assets/img/CheatEngine/Games2/2.png" width="55%" style="display:block; margin:0 auto;">
 *플레이어 체력 검색 후 테이블로 내린 결과*
 
-> **"어떤 튜토리얼은 Float, 어떤 튜토리얼은 4 Bytes인데, 뭘로 해야 맞을까?"**  
-> 게임 데이터 형식은 개발자마다 달라서 정확히 알기 어렵습니다.<br>다양한 스캔 방법을 시도하며 경험을 쌓는 것이 중요합니다.
-{: .prompt-tip}
+이제 이 주소에 실제로 어떤 코드가 접근하는지 추적해볼 차례다.
 
 ---
 
-### 3. 플레이어 체력 분석 및 테스트
-찾은 주소 `01AECD80`에 대해 `Find out what writes to this address`를 실행하여<br>
-체력 감소 로직을 분석했습니다.
+## 3. Find out what writes로 체력 감소 코드 확인
 
-- 적에게 공격받을 때 해당 주소에 값을 쓰는 명령어가 나타남.
-- 확인된 명령어: `0043A480 - 29 50 50 - sub [eax+50],edx`.
+플레이어 체력 주소를 오른쪽 클릭하고 **Find out what writes to this address**를 실행한다.  
+그 상태에서 플레이어가 데미지를 받도록 일부러 맞아주면, 해당 주소에 값을 쓰는 명령어가 캡처된다.
 
-![Step 2 Find out what writes](assets/img/CheatEngine/Games2/3.png)  
+<img src="assets/img/CheatEngine/Games2/3.png" width="55%" style="display:block; margin:0 auto;">
 *플레이어 체력 주소에 대한 Find out what writes 결과*
 
-분석 결과:
-- `eax+50`: 플레이어의 체력 값을 저장하는 메모리 위치.
-- `edx`: 플레이어가 받는 데미지 값.
+이때 어셈블리를 보면 이런 형태의 명령어를 확인할 수 있다.
 
-#### 체력 변조 테스트
-찾은 체력 값을 `99999`로 변경하고 게임을 진행해보았습니다.
-- Target 1을 공격하여 파괴.
-- Target 2의 공격을 한 번만 받아도 플레이어가 즉시 사망.
+```nasm
+sub [eax+50], edx
+```
 
-![Step 2 적 1 파괴 후](assets/img/CheatEngine/Games2/4.png)  
-*Target 1 파괴 후*
+위 어셈을 정리하자면 이런식으로 추측이 가능하다.
 
-![Step 2 플레이어 사망 직전](assets/img/CheatEngine/Games2/5.png)  
-*Target 2의 공격으로 플레이어가 사망 직전인 화면*
+- `eax+50` 위치에는 체력 값이 저장되어 있다.  
+- `edx`에는 이번에 감소될 데미지 값이 들어 있다.  
+- 이 명령이 실행될 때마다 현재 체력에서 데미지만큼 빼는 동작이 이루어진다.
 
-> 단순히 플레이어 체력을 높이는 방법으로는 문제를 해결할 수 없었습니다.  
-> Target 2가 무적 상태로 변경되는 이유와 플레이어가 즉시 사망하는 이유를 더 분석해야 합니다.
-{: .prompt-warning}
+즉, 체력 자체는 `[eax+50]`에 있고, 데미지는 `edx`를 통해 전달되는 구조라고 이해할 수 있다.
 
 ---
 
-### 4. 팁 활용: "Enemy and player are related"
-일반적인 체력 변조로는 해결이 어려운 상황에서, "Enemy and player are related"라는 팁을 활용해보겠습니다.  
-이 팁은 플레이어와 적이 동일한 객체 구조를 공유할 가능성을 이야기 합니다.  
-이를 확인하기 위해 `sub [eax+50],edx` 명령어에 대해 더 깊이 분석해보겠습니다.
+## 4. sub [eax+50], edx가 접근하는 모든 주소 확인
 
-####  체력 감소 로직 변경
-`sub [eax+50],edx`를 `add [eax+50],edx`로 변경하여 테스트해보았습니다.
+이번에는 이 명령어가 **어떤 객체들의 체력에 영향을 주는지**를 확인해야 한다.  
+이를 위해 해당 명령어에 대해 **Find out what addresses this instruction accesses** 기능을 실행한다.
 
-- 플레이어와 적이 서로 공격할 때, 체력이 감소하는 대신 **증가**하는 현상을 확인.
-- 이는 플레이어와 적이 동일한 체력 감소 로직(`eax+50`)을 공유하고 있음을 의미합니다.
-
-> 플레이어와 적이 동일한 객체 구조를 사용하며, 체력 감소 로직도 공유하고 있음을 확인했습니다.  
-> 이를 활용하여 플레이어의 체력 감소를 방지하는 방향으로 접근해보겠습니다.
-{: .prompt-tip}
-
----
-
-### 5. 체력 감소 로직 분석
-`sub [eax+50],edx` 명령어에 대해 `Find out what addresses this instruction accesses`를 실행하여,<br>
-어떤 주소들이 영향을 받는지 확인했습니다.
-
-- 플레이어와 적에게 공격을 주고받으며 분석.
-- 결과적으로 세 개의 주소(`01AEE910`, `01AECD80`, `01AEEC20`)가 나타남.
-- 각각 플레이어, 적 1, 적 2의 체력 주소로 추정.
-
-![Step 2 Find out what addresses](assets/img/CheatEngine/Games2/6.png)  
+<img src="assets/img/CheatEngine/Games2/6.png" width="55%" style="display:block; margin:0 auto;">
 *Find out what addresses this instruction accesses 실행 직전*
 
-![Step 2 체력 주소 확인](assets/img/CheatEngine/Games2/7.png)  
+이 상태에서 플레이어와 Target 1, Target 2가 서로 공격을 주고받도록 하면서 관찰하면  
+`sub [eax+50], edx` 명령이 여러 개의 주소에 차례로 접근한다는 것을 확인할 수 있다.
+
+---
+
+## 5. 플레이어와 적의 체력 주소 구분
+
+Find out what addresses 결과 창에는 세 개의 주요 주소가 나타난다.
+
+<img src="assets/img/CheatEngine/Games2/7.png" width="55%" style="display:block; margin:0 auto;">
 *플레이어와 적의 체력 주소 확인*
 
+다음과 같은 주소들이 등장한다.
+
+- `01AEE910`  
+- `01AECD80`  
+- `01AEEC20`  
+
+플레이어와 두 개의 적이 각각 하나의 체력 주소를 가지는 형태라고 볼 수 있다.  
+공격 상황을 바꿔가며 어떤 주소가 언제 줄어드는지 확인하면 각 주소가 어떤 객체에 해당하는지 감을 잡을 수 있다.
+
+여기까지 정리하면 다음과 같이 이해할 수 있다.
+
+- `sub [eax+50], edx`는 단일 객체 전용 코드가 아니라, `eax`가 가리키는 구조체의 체력을 줄이는 것을 알수있게 된다.  
+- `eax` 값이 바뀌는 것에 따라 플레이어가 맞을 수도 있고, Target 1이나 Target 2가 맞을 수도 있다.  
+- 결국 "누가 맞았는지"는 `eax`가 가리키는 구조체 내부의 필드를 보고 구분해야 한다.
+
 ---
 
-### 6. 구조체 분석 (Dissect Data/Structures)
-세 주소가 동일한 객체 구조를 공유할 가능성을 확인하기 위해, 주소를 드래그하고<br>
-`Ctrl+D`를 눌러 `Dissect Data/Structures`를 실행했습니다.
+## 6. 구조체 분석 — Dissect Data/Structures
 
-![Step 2 Dissect Data 직전](assets/img/CheatEngine/Games2/8.png)  
+이제 `eax`가 가리키는 구조체 내부에서 **팀/타입을 구분하는 필드**를 찾아야 한다.  
+체력 감소 시점에 `eax` 레지스터에 들어 있는 주소를 기준으로 **Dissect Data/Structures** 기능을 실행한다.
+
+<img src="assets/img/CheatEngine/Games2/8.png" width="55%" style="display:block; margin:0 auto;">
 *Dissect Data/Structures 실행 직전*
 
-분석 결과:
-- 구조체의 시작 주소는 다르지만, 오프셋 `+50`에서 각 객체의 체력 값을 확인.
-- 오프셋 `+5C`에서 팀 값을 확인: 플레이어는 `0`, 적은 `1`.
+구조체를 열어보면 다음과 같은 형태의 데이터가 나열되어 있는 것을 볼 수 있다.
 
-![Step 2 Dissect Data 결과](assets/img/CheatEngine/Games2/9.png)  
+<img src="assets/img/CheatEngine/Games2/9.png" width="55%" style="display:block; margin:0 auto;">
 *Dissect Data/Structures 결과*
 
-> 오프셋 `+5C`는 팀 값을 나타내며, 이를 통해 플레이어와 적을 구분할 수 있습니다.  
-> 이 값을 기준으로 플레이어의 체력 감소를 방지하는 스크립트를 작성할 수 있습니다.
-{: .prompt-tip}
+각 필드를 하나씩 바꿔보거나, 플레이어와 적의 구조체를 비교해보면 특정 offset에서 차이가 난다는 것을 알 수 있다.  
+예를 들어 다음과 같이 정리할 수 있다.
+
+- `+0x50`: 체력 값 ( 앞에서 본 `[eax+50]` )  
+- `+0x5C`: 팀 값 ( 플레이어는 0, 적은 1 )
+- 그 외 일부 offset: 팀 정보 또는 역할 구분 값으로 사용되는 필드
+
+플레이어와 적의 구조체를 나란히 비교해보면  
+0x5C 주소에서 플레이어와 적이 서로 다른 값을 가지고 있는 패턴을 확인할 수 있다.  
+이 필드를 이용해 플레이어와 적을 구분할 수 있다.
 
 ---
 
-### 7. 코드 인젝션 스크립트 작성
-`eax+5C` 값을 기준으로, 팀 값이 `0`(플레이어)일 경우 `sub [eax+50],edx` 로직을 건너뛰도록 코드 인젝션 스크립트를 작성했습니다.
-- 팀 값이 `0`이면 체력 감소 로직을 스킵.
-- 팀 값이 `1`(적)일 경우 체력 감소 로직을 정상적으로 실행.
+## 7. 코드 인젝션 스크립트 작성
 
-![Step 2 코드 인젝션 스크립트](assets/img/CheatEngine/Games2/10.png)  
+이제 `sub [eax+50], edx` 명령이 실행될 때 `eax`가 가리키는 구조체의 팀 값에 따라 데미지를 줄지 말지 결정하면 된다.
+
+이를 위해 CE에서 **Code Injection** 템플릿을 생성하고, 원래 명령어를 후킹한 뒤  
+조건을 추가하는 방식으로 스크립트를 작성한다.
+
+<img src="assets/img/CheatEngine/Games2/10.png" width="55%" style="display:block; margin:0 auto;">
 *코드 인젝션 스크립트 작성*
 
+기본적인 흐름은 다음과 같이 잡을 수 있다.
+여기서 중요한 부분은 다음 두 가지다.
+
+- 체력 감소는 항상 `sub [eax+50], edx`로 이루어진다.  
+- 누가 맞았는지는 구조체 내 팀/역할 필드를 통해 구분한다.
+
+팀 offset의 실제 값은 게임마다 다르지만, Dissect Data/Structures 결과를 보며 직접 비교하면 쉽게 찾을 수 있다.
+
 ---
 
-## 결과
-코드 인젝션 스크립트를 적용한 후:
-- 플레이어의 체력은 감소하지 않으며, 적의 체력만 감소.
-- 적 1과 적 2를 차례로 파괴.
+## 8. 스크립트 적용 및 동작 확인
 
-![Step 2 완료](assets/img/CheatEngine/Games2/11.png)  
+스크립트를 적용한 뒤 게임으로 돌아가서 다음과 같이 테스트해본다.
+
+<img src="assets/img/CheatEngine/Games2/11.png" width="55%" style="display:block; margin:0 auto;">
 *Step 2 완료*
+
+정상적으로 동작한다면 다음과 같은 결과를 확인할 수 있다.  
+플레이어 체력은 공격을 받아도 감소되지 않고 그대로 유지가 되며  
+적의 체력만 줄어들고, 두 타겟 모두 제거할수 있게 되어 Next 조건이 만족하게 된다.
+
+---
+
+## 마무리
+
+Games Step 2는 **공용 데미지 처리 루틴을 후킹하고, 구조체 기반으로 대상을 선별하여  데미지를 선택적으로 적용하는 과정**을 알수 있게된다.
+
+이 과정을 통해 자연스럽게 공용 처리 루틴이 어떻게 동작하는지,  
+구조체 기반 게임 설계에서 팀/역할/체력과 같은 필드가 어떻게 연결되는지,  
+조건 분기를 이용해 원하는 대상에게만 주는 코드인젝션 기법을 익힐수 있게 되었다.

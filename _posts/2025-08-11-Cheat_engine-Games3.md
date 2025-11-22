@@ -7,139 +7,148 @@ tags: [Reversing, CheatEngine, Tutorial, Games]
 comments: true
 ---
 
-> 이 포스팅에서는 Cheat Engine의 Games Step 3를 다룹니다: <br> 해당 튜토리얼은 x32를 기준으로 작성합니다.
->  
-> - Step 3 요구사항  
-> - Step 3 풀이  
-> - 결과  
-> - 마무리  
-{: .prompt-info}
+Games Step 3는 튜토리얼에서 배웠던 내용을 실제 게임 상황에 가져와  
+**충돌 판정과 생존 여부를 직접 건드려 보는 단계**다.  
 
-## Step 3: 개요 및 요구사항
-Cheat Engine의 Games Step 3(`gtutorial-i386.exe`)를 열면 다음과 같은 창이 나타납니다.
+이 스테이지의 목표는 단순하다.  
+우리는 게임이 내부적으로 사용하는 **생존 상태 플래그와 충돌 처리 코드**를 건드려 조건을 우회해서 클리어해 본다.
 
-![Step 3 게임 실행 화면](assets/img/CheatEngine/Games3/1.png)  
+---
+
+## 1. 게임 진행 방식 살펴보기
+
+게임을 실행하면 캐릭터와 여러 발판이 보인다.  
+모든 빨간 발판을 밟아 초록 발판으로 변경 시킨뒤 문을 통과하면 게임이 통과되는 구조이지만  
+모든 발판을 초록 발판으로 변경한다 한들 장애물들이 문을 가로막아 사실상 우회없이는 클리어가 불가능한 단계이다.
+
+<img src="assets/img/CheatEngine/Games3/1.png" width="55%" style="display:block; margin:0 auto;">
 *게임 실행 시 화면*
 
-창에 표시된 지시사항은 다음과 같습니다:
-
-> Mark all platforms green to unlock the door.  
-> Beware: Enemies are 1 hit kill (and bad losers).  
-> Hint: There are multiple solutions. e.g.: Find collision detect with enemies, or teleport, or fly or ...  
-> (Click to hide)
-
-### 게임 동작 방식 파악
-게임을 실행하고 동작 방식을 파악해보았습니다:
-- 플레이어를 이동시켜 발판을 밟으면 발판이 녹색으로 변합니다.
-- 모든 발판을 녹색으로 변경하면 문이 활성화되어야 하지만, 장애물(적)이 문을 가로막아 접근이 불가능합니다.
-- 장애물에 닿으면 플레이어가 즉시 사망합니다.
-
-### 핵심 요구사항
-- **발판 활성화**: 모든 발판을 녹색으로 변경하여 문을 활성화.
-- **장애물 처리**: 장애물과의 충돌로 사망하지 않도록 조작.
-- **힌트 활용**: "Find collision detect with enemies"를 활용하여 충돌 로직 조작.
+발판에 대한 정보와 생존상태에 대한 정보는 게임 상에서 보여지는 정보가 없으므로  
+처음부터 Unknown Initial Value를 사용하는 편이 자연스럽다.
 
 ---
 
-## Step 3: 풀이
+## 2. Unknown Initial Value로 생존 상태 스캔
 
-### 1. 해결 방법 고민
-힌트에서 "충돌 감지 조작"이 언급되었으므로, 장애물과의 충돌로 인해 사망하는 로직을 조작하는 방향으로 접근했습니다.  
-충돌 → 사망 로직을 찾기 위해, 개발자가 어떻게 구현했을지 추측했습니다.
-- 플레이어의 생존 상태(`alive`)는 `Player` 구조체에 저장되어 있을 가능성이 높습니다.
-- 예: `struct Player { int x; int y; int alive; }`.
-- 접근법:
-  1. 플레이어 좌표를 찾아 구조체 분석.
-  2. 생존 상태(`alive`) 값을 직접 찾음.
+생존 여부를 직접 보여주는 값이 없기 때문에 Scan Type을 **Unknown Initial Value**로 두고 첫 스캔을 진행한다.  
 
-더 직관적인 방법으로, 생존 상태 값을 찾는 방향을 선택했습니다.
+그 이후에는 캐릭터를 일부러 여러 번 죽였다가 다시 시작하면서  
 
----
+- 살아 있는 동안에는 **Unchanged Value**  
+- 죽고 난 뒤에는 **Changed Value**  
 
-### 2. 생존 상태 값 검색 (Unknown Initial Value)
-`Unknown Initial Value` 스캔을 통해 생존 상태 값을 찾았습니다:
-- **Scan Type**: `Unknown Initial Value`, **Value Type**: `4 Bytes`.
-- 생존 시와 사망 시 값을 비교하며 `Changed Value`와 `Unchanged Value`로 필터링.
-- 결과: 약 700개의 주소 발견.
+이 두 가지를 번갈아 사용해 필터링한다.
 
-![Unknown Initial Value 스캔](assets/img/CheatEngine/Games3/2.png)  
+<img src="assets/img/CheatEngine/Games3/2.png" width="55%" style="display:block; margin:0 auto;">
 *Unknown Initial Value로 생존 값 검색*
 
+이 과정을 수차례 반복하면 처음엔 수만 개에 달하던 후보가 **약 700개 정도**까지 줄어든다.
+
 ---
 
-### 3. 주소 필터링
-700개 주소에서 생존 상태 값을 좁히기 위해 규칙을 설정:
-- 생존 상태는 `bool` 또는 `int`로 저장될 가능성이 높으므로, 값이 `0`(사망) 또는 `1`(생존)일 것으로 가정.
-- 값이 `0` 또는 `1`인 주소만 확인.
+## 3. 후보 주소를 생존 플래그 관점에서 다시 좁히기
 
-**필터링 과정**:
-- `017`로 시작하는 주소는 그래픽 관련(`igxelpgicd32.dll`)로 판단, 제외.
-- `018` 또는 `019`로 시작하는 주소 중 값이 `0` 또는 `1`인 주소 약 5개 발견.
-- 테이블로 내려 확인한 결과, 값이 `0`과 `1`로 변하는 주소는 2개:
-  1. `018CCE48`: 충돌 시 플레이어는 보이지만 게임이 초기화됨.
-  2. `018CCE68`: 충돌 시 사망 이펙트와 함께 플레이어가 사라지지만 게임은 초기화되지 않음.
+이제 남은 700개 중에서 “살았을 때 1, 죽었을 때 0처럼 보이는 플래그 형태의 값”만 골라봐야 한다.  
 
-![필터링된 주소](assets/img/CheatEngine/Games3/3.png)  
+보통 이런 값은 `bool`이나 작은 `int`로 저장되기 때문에 0 또는 1 근처의 값들에 먼저 확인하는 편이 좋다.
+
+<img src="assets/img/CheatEngine/Games3/3.png" width="55%" style="display:block; margin:0 auto;">
 *필터링 후 테이블에 내린 주소*
 
-> 두 주소 모두 생존과 관련 있지만, `018CCE68`이 사망 로직에 더 직접적으로 연관된 것으로 판단했습니다.
-{: .prompt-tip}
+실제로 살펴보면 대략 이런 패턴이 보인다.
+
+017로 시작하는 주소들은 `igxelpgicd32.dll` 같은 그래픽 모듈에서 나온 값이라 생존 플래그와는 거리가 멀어 보인다.  
+018 대역에 있는 값들 중 일부는 캐릭터가 죽을 때 1 → 0, 다시 시작할때 0 → 1로 바뀌는 형태를 보인다.
+
+이런 식으로 상태 변화를 직접 확인해 보면서 후보를 몇 개로 압축할 수 있다.
 
 ---
 
-### 4. 해결 방법 1: 생존 값 고정
-두 주소(`018CCE48`, `018CCE68`)의 값을 `0`으로 고정(Freeze)하여 테스트:
-- 장애물 충돌 시 사망 이펙트는 발생하지만, 플레이어는 화면에 남아 있으며 게임이 초기화되지 않음.
-- 모든 발판을 녹색으로 변경하고 문을 통과 가능.
+## 4. 생존 플래그를 직접 고정해서 테스트해 보기
 
-![생존 값 고정](assets/img/CheatEngine/Games3/4.png)  
-*두값 다 `0` 고정 후 이펙트 발생 장면*
+후보 중에서 두 개의 주소가 캐릭터가 죽을 때마다 함께 0으로 떨어지고,  
+다시 살아날 때 1로 돌아오는 모습을 보인다.  
 
-> **왜 두 값 모두 `0`으로 고정하였나요?**
-> - `018CCE48` 의 경우 충돌시 플레이어가 보입니다.
-> - `018CCE68` 의 경우 게임이 초기화 되지 않습니다.
-{: .prompt-tip}
+이 둘을 테이블로 내린 뒤, 둘 다 0으로 고정한 상태에서 발판을 밟아 본다.
+
+<img src="assets/img/CheatEngine/Games3/4.png" width="55%" style="display:block; margin:0 auto;">
+*두 값 다 0 고정 후 이펙트 발생 장면*
+
+캐릭터가 분명히 위험한 발판을 밟았는데도 사망 처리 대신 특이한 이펙트만 발생하고 그대로 살아남는 것을 볼 수 있다.  
+
+이걸로 이 두 주소가 실제 충돌 처리와 밀접하게 연결된 값이라는 점을 확인할 수 있다.  
+단순히 값만 고정하는 방식으로도 클리어는 가능하지만, 이번 단계에서는 한 발 더 나아가 코드 자체를 건드려 본다.
+
 ---
 
-### 5. 해결 방법 2: 충돌 로직 조작
-`018CCE68` 주소에 대해 `Find out what writes to this address`를 실행하여 해당 주소에 값을 쓰는 명령어를 확인했습니다:
+## 5. Find out what writes로 생존 플래그를 갱신하는 코드 찾기
 
-![Find out what writes](assets/img/CheatEngine/Games3/5.png)  
+이제 두 주소 중 하나를 기준으로 **Find out what writes to this address**를 실행한다.
+
+<img src="assets/img/CheatEngine/Games3/5.png" width="55%" style="display:block; margin:0 auto;">
 *Find out what writes to this address 결과*
 
-- 명령어: `00435A18 - C6 46 38 01 - mov byte ptr [esi+38],01`.
+캐릭터가 위험한 발판과 충돌하거나, 게임이 “죽었다”고 판단하는 순간  
+특정 명령어가 이 주소에 값을 쓰는 것을 확인할 수 있다.  
 
-다음으로, 메모리 뷰에서 해당 명령어 주변을 분석하기 위해 `Show Disassembler`를 실행했습니다:
-
-![메모리 뷰](assets/img/CheatEngine/Games3/6.png)  
-*Show Disassembler로 확인한 메모리 뷰*
-
-분석 결과:
-- 바로 위에 `cmp byte ptr [esi+38],00`가 존재.
-- `esi+38`은 생존 상태를 나타내며, `0`(생존)인지 비교.
-- `0`이 아니면 `jne "gtutorial-i386.exe"+35C12`로 점프하여 사망 처리.
-
-**조건문 변경**:
-- `cmp byte ptr [esi+38],00`의 비교 값을 `0` → `1`로 변경하거나, `jne` → `je`로 변경.
-- 변경 후, 충돌 시 사망 로직이 스킵되어 플레이어가 생존.
-
-![조건문 변경](assets/img/CheatEngine/Games3/7.png)  
-*조건문 변경 (jne → je)*
+이 명령어가 실제로 생존 여부를 바꾸는 핵심 코드다.  
+여기서 Show Disassembler로 넘어가 어셈블리 흐름을 자세히 본다.
 
 ---
 
-## 결과
-두 방법 모두 성공:
-- **방법 1**: 생존 값을 고정하여 충돌 무시.
-- **방법 2**: 충돌 로직의 조건문을 변경하여 사망 방지.
-- 모든 발판을 녹색으로 변경하고 문을 통과하여 Step 3 완료.
+## 6. 메모리 뷰에서 조건 분기 확인
 
-![Step 3 완료](assets/img/CheatEngine/Games3/8.png)  
+Disassembler 화면에서 보면 해당 주소에 값을 쓰는 부분 바로 앞에 조건 분기 명령어가 붙어 있다.
+
+<img src="assets/img/CheatEngine/Games3/6.png" width="55%" style="display:block; margin:0 auto;">
+*Show Disassembler로 확인한 메모리 뷰*
+
+구체적인 레지스터 이름이나 정확한 주소는 상황마다 다를 수 있지만, 흐름 자체는 대략 이런 형태다.
+
+```nasm
+cmp  [생존_관련_값], 0
+jne  short 죽음_처리_분기
+...
+; 이 구간에서 충돌, 이펙트, 사망 플래그 설정 등의 처리가 이루어진다
+```
+
+비교 후 **값이 0이 아니면(jne)** 죽음 처리 루틴으로 분기하는 조건이다.  
+여기서 분기를 뒤집으면, 원래 죽어야 할 상황에서도 충돌 루틴이 건너뛰어져  캐릭터가 계속 살아남는 효과를 만들 수 있다.
+
+---
+
+## 7. 조건문 뒤집기 — jne를 je로 변경
+
+이제 Auto Assembler나 CE의 간단한 패치를 이용해 `jne`를 `je`로 바꿔 준다.
+
+<img src="assets/img/CheatEngine/Games3/7.png" width="55%" style="display:block; margin:0 auto;">
+*조건문 변경 (jne → je)*
+
+이 한 줄을 바꾸면 흐름이 이렇게 바뀐다.
+
+원래는 비교 결과가 다를 때(충돌 조건 만족 시)  죽음 처리 코드가 실행됐다.   
+이제는 비교 결과가 같을 때만 죽음 처리 코드로 들어가기에 분기가 일어나지 않으므로 캐릭터가 죽지 않게 된다.
+
+앞에서 생존 플래그를 0으로 고정했던 것과 비슷한 효과지만, 이번에는 값을 직접 만지는 것이 아니라  
+조건문 자체를 손대서 게임 로직을 바꾼 것이다.
+
+---
+
+## 8. 실제 게임 진행과 Step 3 완료
+
+조건을 바꾼 상태로 다시 게임을 진행해 보면 위험한 장애물을 밟아도 캐릭터가 계속 살아남는다.  
+장애물에 닿게되면 기존에는 사망처리가 되어야 하지만 정상적으로 통과하여 클리어할 수 있다.
+
+<img src="assets/img/CheatEngine/Games3/8.png" width="55%" style="display:block; margin:0 auto;">
 *Step 3 완료 화면*
 
 ---
 
 ## 마무리
-이번 Step 3는 Cheat Engine 튜토리얼의 마지막 단계였습니다.  
-문제를 풀며 다양한 선택지를 제시하고, 여러 방면으로 사고하는 과정을 강조하고자 했습니다.  
-이 글을 읽는 분들이 원하는 목표를 이루길 바랍니다. 이상입니다.
+
+Games Step3는 단순한 변경을 통한 클리어가 아닌 플래그, 조건 분기, 충돌 처리 로직을 생각하게 만든 문제인거 같다.  
+Unknown Initial Value로 상태 값을 찾고, 플래그를 직접 고정해 보며 의미를 파악한 뒤,  
+해당 값을 갱신하는 코드와 분기 조건까지 조작해 보는 흐름이다.  
+
+이런 과정을 한번 경험해 두면 앞으로 다른 게임을 분석할 때도 유용하게 참고정도는 할수 있을것으로 생각이 된다. 

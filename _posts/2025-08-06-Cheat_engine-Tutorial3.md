@@ -7,76 +7,74 @@ tags: [Reversing, CheatEngine, Tutorial]
 comments: true
 ---
 
-> 이 포스팅에서는 Cheat Engine 튜토리얼의 Step 3를 다룹니다: <br> 해당 튜토리얼은 x32를 기준으로 작성합니다.
->  
-> - Step 3 요구사항  
-> - Step 3 풀이  
-> - 결과  
-{: .prompt-info}
+Step 3에서는 **초기 값을 모르는 상태에서 값이 어떻게 변하는지를 기반으로 실제 주소를 찾아내는 과정**을 경험하게 된다.  
+이전 단계와는 달리 Health 값이 0~500 사이의 임의의 값으로 설정되어 있기 때문에,  
+정확한 값을 입력해서 스캔할 수 없다는 점이 이 단계의 핵심이라고 볼 수 있다.
 
-## Step 3: 개요 및 요구사항
-
-Cheat Engine 튜토리얼의 Step 3(`000004D18-Tutorial-i386.exe`)를 열면 다음과 같은 창이 나타납니다.
-
-- 창 하단에 "Health" 값이 바 형태로 표시됩니다.
-- "Hit me" 버튼을 누르면 체력이 감소합니다.
-- "Next" 버튼은 아직 비활성화 상태입니다.
-
-튜토리얼 창에 나오는 지시사항을 번역하면 다음과 같습니다:  
-
-> 값이 0~500 사이임을 알고 있으므로 필요한 주소일 가능성이 가장 높은 값을 선택하여 목록에 추가합니다.  
-> 체력을 5000으로 변경합니다.
-
-이제 이 요구사항을 하나씩 해결해보겠습니다.
+따라서 이번 단계에서 가장 중요한 개념은  
+**Unknown initial value**와 **값의 변화에 따른 필터링**이다.
 
 ---
 
-## Step 3: 풀이
+## 1. 초기 스캔 — Unknown initial value 사용
 
-### 1. 알 수 없는 초기 값 스캔하기
-"Health" 값이 0~500 사이의 임의의 값으로 시작하므로 초기 값을 모릅니다.<br>이 경우 Cheat Engine의 `Unknown initial value` 기능을 활용합니다.
+튜토리얼 창에 표시된 Health 값은 숫자로 정확히 주어지지 않는다.  
+따라서 CE에서도 처음에는 어떤 값인지 알 수 없다.  
+이럴 때 사용하는 옵션이 바로 *Unknown initial value*이다.
 
-- Cheat Engine에서 튜토리얼 프로세스(`000004D18-Tutorial-i386.exe`)를 선택합니다.
-- **Scan Type(스캔 유형)**을 `Unknown initial value`로 설정합니다.
-- **Value Type(값 유형)**을 `4 Bytes`로 설정합니다.
-- **First Scan(첫 스캔)** 버튼을 클릭해 메모리에서 모든 값을 검색합니다.
+아래 화면은 Unknown initial value로 전체 메모리를 첫 스캔한 모습이다.
 
-![Step 3 초기 스캔](assets/img/CheatEngine/Step3/1.png)  
+
+  <img src="assets/img/CheatEngine/Step3/1.png" width="55%" style="display:block; margin:0 auto;">
 *Unknown initial value로 초기 스캔*
 
-> 스캔이 완료되면 "Found(발견)" 목록에 653,312개의 주소가 나타납니다. <br> 주소가 너무 많으니 줄여야 합니다.
-{: .prompt-tip}
+검색 결과는 매우 많은 주소가 나오는데,  
+지금은 그중 어떤 것이 Health인지 알 수 없으므로  
+값의 변화를 통해 후보를 줄여야 한다.
+
 ---
 
-### 2. Decreased value로 주소 목록 좁히기
-올바른 주소를 찾기 위해 체력 값을 변경한 후 `Decreased value` 스캔을 진행합니다.
+## 2. 값이 감소한 뒤 다시 스캔하기
 
-- 튜토리얼 창으로 돌아가서 **Hit me** 버튼을 한 번 누릅니다. 체력이 감소합니다.
-- Cheat Engine에서 **Scan Type(스캔 유형)**을 `Decreased value`로 변경합니다.
-- **Next Scan(다음 스캔)** 버튼을 클릭해 값이 감소한 주소만 필터링합니다.
-- 위 과정을 주소가 적어질때까지 반복합니다.
+튜토리얼 창에서 Hit me를 누르면 Health가 감소한다.  
+이때 CE에서 Scan Type을 *Decreased value*로 변경하고 Next Scan을 수행하면  
+Health처럼 실제로 값이 감소한 주소만 남게 된다.
 
-![Step 3 Decreased value 스캔](assets/img/CheatEngine/Step3/2.png)  
-*"Hit me" 클릭 후 Decreased value 스캔*
 
-> "Found(발견)" 목록이 줄어들며, 예를 들어 4개의 주소가 남습니다. <br> 이 중 0~500 사이의 값을 가진 주소를 찾습니다.
-{: .prompt-tip}
+  <img src="assets/img/CheatEngine/Step3/2.png" width="55%" style="display:block; margin:0 auto;">
+*Hit me 클릭 후 Decreased value 스캔*
+
+이 과정을 여러 번 반복하게 되면 Health 값처럼 일정하게 줄어드는 주소들만 남기 때문에 최종적으로 몇 개의 후보만 남게 된다.
+
 ---
 
-### 3. 주소를 선택하고 값 수정하기
-필터링된 주소 중 요구사항에 맞는 주소를 선택해 수정합니다.
+## 3. 남은 주소 확인 후 테이블로 내리기
 
-- "Found(발견)" 목록에서 값이 0~500 사이인 주소를 확인합니다.
-- 해당 주소를 마우스 오른쪽 버튼으로 클릭하고 `Add selected addresses to the addresslist`를 선택합니다.
-- 주소 목록에서 값을 더블클릭하고 `5000`으로 변경합니다.
+필터링된 주소 목록에서 값이 일정 범위(0~500)에 있는 주소를 선택하여 CE 테이블에 추가한다.
 
-![Step 3 주소 선택](assets/img/CheatEngine/Step3/3.png)  
+
+  <img src="assets/img/CheatEngine/Step3/3.png" width="55%" style="display:block; margin:0 auto;">
 *필터링된 주소에서 체력 값 선택*
 
-![Step 3 값 변경](assets/img/CheatEngine/Step3/4.png)  
-*체력 값을 5000으로 변경*
+주소를 테이블에 추가한 뒤 튜토리얼 창에서 Hit me를 눌러 값이 함께 변하는지 확인하면 실제로 Health를 나타내는 값인지 쉽게 구별할 수 있다.
 
 ---
 
-## 결과
-체력 값이 5000으로 정상적으로 변경되면 **Next** 버튼이 활성화됩니다.
+## 4. Health 값을 직접 수정하기
+
+Health 주소가 맞다는 것을 확인했다면 이제 값을 직접 변경해볼 차례다.  
+테이블에서 해당 Value를 더블 클릭하여 5000으로 수정하면 튜토리얼 창에서도 값이 즉시 반영된다.
+
+  <img src="assets/img/CheatEngine/Step3/4.png" width="55%" style="display:block; margin:0 auto;">
+*체력 값을 5000으로 변경*
+
+Health 값이 충분히 큰 값으로 설정되면  
+Step 3의 조건을 충족하여 Next 버튼이 활성화된다.
+
+---
+
+## 마무리
+
+Step 3는 눈에 보이는 값만을 기준으로 직접 검색하던 방식에서 벗어나,  
+**값이 어떻게 변화하는지를 이용해 메모리 주소를 특정하는 방법**을 익히는 단계다.  
+Unknown initial value, Decreased value 같은 옵션이 어떤 상황에서 쓰이는지를 이해하면 앞으로 더 복잡한 구조의 프로그램을 분석할 때 큰 도움이 된다.

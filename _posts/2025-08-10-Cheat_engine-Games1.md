@@ -1,124 +1,81 @@
 ---
 layout: post
 title: "[Cheat Engine] Games: Step 1"
-date: 2025-08-10 16:00:00 +0900
-categories: [Reversing, CheatEngine]
+date: 2025-08-10 20:00:00 +0900
+categories: [Reversing, CheatEngine, Games]
 tags: [Reversing, CheatEngine, Tutorial, Games]
 comments: true
 ---
 
-> 이 포스팅에서는 Cheat Engine의 Games Step 1을 다룹니다: <br> 해당 튜토리얼은 x32를 기준으로 작성합니다.
->  
-> - Step 1 요구사항  
-> - Step 1 풀이  
-> - 결과  
-{: .prompt-info}
+Games Step 1은 기존 튜토리얼보다 훨씬 실제 게임에 가까운 환경에서  
+값을 탐색하고 원하는 방식으로 조작하는 경험을 제공한다.  
+특히 이 단계는 값이 단순하지 않게 숨겨져 있기 때문에,  
+기존에 배운 **정확한 값 검색**, **값 변화 기반 검색**, **Unknown Initial Value** 개념을  
+실전적으로 어떻게 활용해야 하는지를 자연스럽게 익히게 된다.
 
-## Step 1: 개요 및 요구사항
-Cheat Engine의 Games Step 1(`gtutorial-i386.exe`)를 열면 다음과 같은 창이 나타납니다.
+---
 
-![Step 1 게임 실행 화면](assets/img/CheatEngine/Games1/1.png) 
+## 1. 게임 시작과 구조 파악
+
+게임을 실행하면 단순한 형태의 슈팅 화면이 나타난다.  
+플레이어는 총을 발사할 수 있고, 발사할 때마다 총알 수가 줄어들게 되어 있다.  
+우리가 해야 할 일은 **총알 값이 저장된 주소를 찾아 수정하는 것**이다.
+
+<img src="assets/img/CheatEngine/Games1/1.png" width="55%" style="display:block; margin:0 auto;">
 *게임 실행 시 화면*
 
-창에 표시된 지시사항은 다음과 같습니다.
-
-> Every 5 shots you have to reload, after which the target will heal.  
-> Try to find a way to destroy the target.  
-> (Click to hide)
-
-### 게임 동작 방식 파악
-게임을 실행하고 동작 방식을 파악해보았습니다.
-
-- 타겟을 클릭하면 타겟의 체력이 감소합니다(체력 바는 상단에 표시됨).
-- 총알은 "Ammo till reload"로 표시되며, 초기값은 5발입니다.
-- 한 발을 쏠 때마다 총알이 1씩 감소하며, 5발을 모두 사용하면 재장전(reload)이 발생합니다.
-- 재장전 시 타겟의 체력이 완전히 회복됩니다.
-
-### 핵심 요구사항
-- **타겟 파괴**: 타겟의 체력을 0으로 만들어야 합니다.
-- **총알값 변조 또는 체력 조작**: 재장전으로 인해 타겟의 체력이 회복되지 않도록 하거나, 타겟의 체력을 직접 조작해야 합니다.
-
-이제 이 요구사항을 하나씩 해결해보겠습니다.
+처음 총알 값은 5로 표시된다.  
+보통 튜토리얼 단계에서는 이런 단순한 값은 바로 Exact Value Scan으로 찾을 수 있지만,  
+Games 단계는 다르다.  
+겉으로 보이는 값과 메모리에 저장된 값이 일치하지 않을 수 있다.
 
 ---
 
-## Step 1: 풀이
+## 2. 일반적인 Exact Value Scan 시도
 
-### 1. 해결 방법 고민
-게임의 동작 방식을 바탕으로 문제를 해결할 수 있는 두 가지 접근법을 생각해볼 수 있습니다.
+처음에는 5를 입력해 검색해 보고, 총을 한 발 쏜 뒤 4로 바뀐 값을 기준으로 Next Scan을 시도한다.
 
-1. **타겟의 체력 값을 조작**: 타겟의 체력 값을 직접 변경하여 0으로 만듭니다.
-2. **총알 값을 조작**: 총알 값을 변조하거나, 재장전이 되지 않도록 한다.
-
-첫 번째 방법의 경우, 게임 화면에서 타겟의 체력 값이 숫자로 표시되지 않기 때문에 값을 찾기가 어렵습니다.<br>
-반면, 두 번째 방법은 화면에 "Ammo till reload"로 총알 값이 표시되므로 더 쉽게 접근할 수 있습니다.<br>
-따라서 두 번째 방법으로 진행하겠습니다.
-
----
-
-### 2. 총알 값 검색 시도 (4 Bytes)
-총알 값이 5발에서 시작하여 한 발 쏠 때마다 1씩 감소하는 것을 확인했습니다. 따라서 다음과 같이 검색을 시도했습니다.
-- **Scan Type(스캔 유형)**: `Exact Value`
-- **Value Type(값 유형)**: `4 Bytes`
-- 초기 총알 값 `5`를 검색 → 결과: 여러 주소.
-- 한 발 쏜 후 총알 값 `4`로 검색 → 결과: "Found: 0".
-
-![Step 1 총알 값 검색 실패](assets/img/CheatEngine/Games1/2.png)  
+<img src="assets/img/CheatEngine/Games1/2.png" width="55%" style="display:block; margin:0 auto;">
 *총알 값 검색 (5 → 4) 후 Found: 0*
 
-> 4 Bytes로 검색했지만 결과가 나오지 않았습니다.<br>
-이는 게임에서 총알 값이 단순히 5에서 4로 감소하는 방식이 아니라, 다른 방식으로 처리되고 있을 가능성이 높습니다.  
-> 또한, 중요한 데이터에 대한 보안(예: 암호화 또는 다른 형식)이 적용되었을 수도 있습니다.
-{: .prompt-tip}
+단 한 개의 주소도 검색되지 않는다.  
+값이 보이는 그대로 저장되어 있지 않기 때문에 단순 스캔 방식으로는 접근할 수 없다는 의미다.  
+이런 상황에서 떠올려야 할 방법이 바로 **Unknown Initial Value**다.
 
 ---
 
-### 3. Unknown Initial Value 스캔으로 접근
-이전에 진행한 Cheat Engine 튜토리얼에서 배운 방법을 활용하여, 값의 변화를 기준으로 검색하는 방식으로 변경했습니다.
-- **Scan Type(스캔 유형)**: `Unknown Initial Value`
-- **Value Type(값 유형)**: `4 Bytes` (총알 값이 정수로 보이므로 4 Bytes로 설정).
-- 초기 스캔 후, 한 발 쏘고 **Changed Value**로 스캔 → 주소 좁히기.
-- 총알 값이 5 → 4 → 3으로 변할 때마다 반복적으로 스캔.
+## 3. Unknown Initial Value로 총알 값 찾기
 
-이 과정을 통해 주소 `019043C4`를 찾았습니다.
+정확한 값이 무엇인지 모르기 때문에  
+Scan Type을 Unknown Initial Value로 설정한 뒤 첫 스캔을 진행한다.  
+이 상태에서 총을 발사하여 값이 감소하는 순간을 기준으로 **Decreased Value** 스캔을 반복한다.
 
-![Step 1 Unknown Initial Value 스캔 결과](assets/img/CheatEngine/Games1/3.png)  
+<img src="assets/img/CheatEngine/Games1/3.png" width="55%" style="display:block; margin:0 auto;">
 *Unknown Initial Value 스캔으로 찾은 총알 값 주소*
 
----
+몇 번 반복하면 총을 발사할 때마다 값이 함께 변하는 주소 하나만 남게 된다.  
+이 주소가 실제 총알 값을 관리하는 메모리 영역이다.
 
-### 4. 총알 값 분석
-주소 `019043C4`를 분석해보니, 총알 값이 예상과 다르게 동작하고 있음을 알게 되었습니다.
-- 화면상에서는 총알이 5 → 4 → 3으로 감소하는 것처럼 보이지만,<br>
-메모리에서는 값이 0 → 1 → 2로 **증가**하고 있었습니다.
-- 게임 내부에서는 "남은 총알 수"를 감소시키는 대신, "사용한 총알 수"를 증가시키는 방식으로 처리되고 있었습니다.
-
-이를 확인하기 위해 `Find out what writes to this address` 기능을 사용했습니다:
-- 주소 `019043C4`를 선택하고, `Find out what writes to this address`를 실행.
-- 총알을 한 발 쏘면 해당 주소에 값을 쓰는 명령어가 나타남.
-- 메모리 뷰에서 관련 코드를 확인하니, `{ ("Ammo till reload: %d") }`라는 주석이 포함되어 있었습니다.<br>
-이는 해당 값이 실제로 "Ammo till reload" 값을 나타냄을 확인시켜줍니다.
-
-> 4 Bytes 스캔으로 값이 검색되지 않았던 이유는 값이 감소(5 → 4)가 아니라 증가(0 → 1)로 처리되었기 때문입니다.  
-> `Unknown Initial Value`와 `Changed Value` 스캔 방식을 통해 이를 해결할 수 있었습니다.
-{: .prompt-tip}
+여기까지 도달하면 총알 값을 원하는 값으로 직접 수정하거나 유지할 수 있다.
 
 ---
 
-### 5. 총알 값 고정(Freeze)
-총알 값을 고정하여 재장전이 발생하지 않도록 설정했습니다.
+## 4. 총알 값 Freeze로 고정시키기
 
-- 주소 `019043C4`를 테이블에 추가.
-- 값을 `0`으로 설정하고, **Freeze** 체크박스를 활성화.
-- 총알 값을 고정하면 더 이상 타겟의 체력이 회복되지 않습니다.
+찾아낸 주소를 테이블에 추가한 뒤 값을 수정하고 **Freeze(고정)** 기능을 활성화하면  
+총을 계속 쏴도 값이 줄어들지 않게 된다.
 
-![Step 1 총알 값 Freeze](assets/img/CheatEngine/Games1/4.png)  
+<img src="assets/img/CheatEngine/Games1/4.png" width="55%" style="display:block; margin:0 auto;">
 *총알 값 Freeze 후*
 
+이제 플레이어는 무한한 탄약을 가진 상태로 게임을 진행할 수 있다.
+
 ---
 
-## 결과
-총알 값을 고정한 상태에서 타겟을 계속 공격하면 됩니다.
+## 마무리
 
-- 타겟의 체력 바가 점차 감소하며, 결국 체력이 0이 되어 타겟이 파괴됨.
-- Step 1이 완료되며, 다음 단계로 넘어갈 수 있습니다.
+Games Step 1은 단순한 값 스캔으로 해결되지 않는 상황에서 어떤 접근 방식을 사용해야 하는지 알려주는 단계다.  
+겉으로 보이는 숫자가 항상 실제 메모리에 저장된 값과 일치하지 않기 때문에 Unknown Initial Value와  
+값 변화 기반 스캔은 게임 메모리 분석에서 매우 중요한 기초 기술이다.
+
+이 단계를 이해하면 이후 Games 시리즈에서 등장하는 더 복잡한 값 구조나 포인터 기반 변수들도 훨씬 자연스럽게 분석할 수 있다.

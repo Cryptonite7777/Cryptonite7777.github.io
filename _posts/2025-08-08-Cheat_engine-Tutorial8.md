@@ -1,201 +1,140 @@
 ---
 layout: post
 title: "[Cheat Engine] Tutorial: Step 8"
-date: 2025-08-08 19:00:00 +0900
+date: 2025-08-08 19:10:00 +0900
 categories: [Reversing, CheatEngine]
 tags: [Reversing, CheatEngine, Tutorial]
 comments: true
 ---
 
-> 이 포스팅에서는 Cheat Engine 튜토리얼의 Step 8를 다룹니다: <br> 해당 튜토리얼은 x32를 기준으로 작성합니다.
->  
-> - Step 8 요구사항  
-> - Step 8 풀이  
-> - 결과  
-{: .prompt-info}
+Step 8에서는 지금까지 배웠던 포인터 개념을 한 번 더 확장하여  
+**여러 단계로 연결된 다중 포인터 구조를 직접 추적하는 과정**을 다루게 된다.  
+이 단계의 목표는 최종 값을 가리키는 베이스 포인터(Base Pointer)를 찾아 CE 테이블에 올바르게 구성하는 것이다.
 
-## Step 8: 개요 및 요구사항
-Cheat Engine 튜토리얼의 Step 8(`000004EA-Tutorial-i386.exe`)를 열면 다음과 같은 창이 나타납니다.
-
-- 창 하단에 체력 값이 표시됩니다.
-- "Change Value" 버튼을 클릭하면 체력 값이 변경됩니다.
-- "Change Pointer" 버튼을 클릭하면 포인터와 값이 변경됩니다.
-- "Next" 버튼은 아직 비활성화 상태입니다.
-
-튜토리얼 창에 나오는 지시사항을 번역하면 다음과 같습니다:
-
-> 이 단계에서는 다중 레벨 포인터(multi-level pointers)를 사용하는 방법을 배웁니다.<br>
-Step 6에서는 1단계 포인터를 다루었지만, 이번에는 4단계 포인터를 다룹니다.<br>
-값을 접근하는 코드를 찾고, 포인터와 오프셋을 추적하여 베이스 주소(녹색 주소)까지 도달해야 합니다.<br>
-"Change Value" 버튼을 눌러 체력 값을 접근하고, 포인터 경로를 찾은 후 "Change Pointer" 버튼을 눌러 테스트합니다.<br>
-포인터와 값이 변경된 후 3초 내에 값을 5000으로 고정(freeze)해야 "Next" 버튼이 활성화됩니다.
-
-이제 이 요구사항을 하나씩 해결해보겠습니다.
+포인터 체인이 여러 단계로 이어져 있기 때문에  
+각 단계의 포인터를 하나씩 직접 추적해 가며 최종 주소를 찾아내는 과정이 핵심이다.
 
 ---
 
-## Step 8: 풀이
+## 1. 초기 값 검색 및 테이블로 내리기
 
-### 1. 초기 값 검색 및 테이블로 내리기
-현재 튜토리얼에 나타난 체력 값이 3883으로 시작하니, 이 값을 Cheat Engine으로 찾아보겠습니다.
+튜토리얼 창에서 보이는 값(예: 3883)을 기준으로 Exact Value 스캔을 진행하여 값을 찾는다.
 
-- Cheat Engine에서 튜토리얼 프로세스(`000004EA-Tutorial-i386.exe`)를 선택합니다.
-- **Scan Type(스캔 유형)**을 `Exact Value`로 설정합니다.
-- **Value Type(값 유형)**을 `4 Bytes`로 설정합니다.
-- 검색할 값을 `3883`으로 입력합니다.
-- **First Scan(첫 스캔)** 버튼을 클릭해 메모리에서 값을 검색합니다.
-- 검색 결과에서 주소 `018ECA38`을 선택하고, `Add selected addresses to the addresslist`를 통해 테이블로 내립니다.
-
-![Step 8 초기 검색](assets/img/CheatEngine/Step8/1.png)  
+<img src="assets/img/CheatEngine/Step8/1.png" width="55%" style="display:block; margin:0 auto;">
 *초기 값 3883 검색 후 테이블로 내리기*
 
-> 스캔이 완료되면 "Found(발견)" 목록에 여러 주소가 나타납니다.<br>
-값을 변경하여 주소를 좁힌 후 테이블로 내립니다.
-{: .prompt-tip}
+값이 정확히 확인되면 테이블로 내리고 이제 이 값에 접근하는 포인터를 추적하는 단계로 넘어간다.
+
 ---
 
-### 2. "Find out what accesses this address"로 1단계 포인터 분석
-테이블에 추가한 주소에서 값을 접근하는 코드를 찾아 분석합니다.
+## 2. 1단계 포인터 확인
 
-- 테이블에 추가된 주소 `018ECA38`을 마우스 오른쪽 버튼으로 클릭합니다.
-- 메뉴에서 `Find out what accesses this address`를 선택합니다.
-- 새 창이 열리며, 처음에는 아무것도 표시되지 않습니다.
-- 튜토리얼 창에서 **Change Value** 버튼을 클릭하면, 창에 `mov [esi+18],eax` 명령어가 나타납니다.
-- `esi`의 값을 확인(예: `018ECA20`)하고, 오프셋 `0x18`을 기록합니다.
+테이블에서 해당 값을 오른쪽 클릭해 **Find out what accesses this address**를 선택하면  
+이 값에 접근하는 첫 번째 포인터를 확인할 수 있다.
 
-![Step 8 1단계 포인터 분석](assets/img/CheatEngine/Step8/2.png)  
+<img src="assets/img/CheatEngine/Step8/2.png" width="55%" style="display:block; margin:0 auto;">
 *"Find out what accesses this address"로 1단계 포인터 확인*
 
-> `mov [esi+18],eax`은 `esi+0x18`이 가리키는 주소에 값을 쓰는 명령어입니다.<br>
-`esi`가 1단계 포인터이며, 다음 단계에서 이 주소를 추적합니다.
-{: .prompt-tip}
+해당 명령어에서 사용되는 레지스터를 통해 실제 1단계 포인터 주소를 추적할 수 있다.
+
 ---
 
-### 3. 1단계 포인터 주소 검색 및 테이블로 내리기
-1단계 포인터 주소(`018ECA20`)를 검색하여 테이블로 내립니다.
+## 3. 1단계 포인터 주소 검색 후 테이블로 내리기
 
-- Cheat Engine에서 **Hex** 체크박스를 활성화하고, `esi` 값(`018ECA20`)을 검색합니다.
-- **Scan Type(스캔 유형)**을 `Exact Value`로 설정합니다.
-- **Value Type(값 유형)**을 `4 Bytes`로 설정합니다.
-- 검색 결과에서 주소 `019648E0`을 선택하고, 테이블로 내립니다.
+포인터가 가리키는 주소를 메모리에서 찾아 Hex 옵션을 사용하여 그대로 검색한다.
 
-![Step 8 1단계 포인터 검색](assets/img/CheatEngine/Step8/3.png)  
+<img src="assets/img/CheatEngine/Step8/3.png" width="55%" style="display:block; margin:0 auto;">
 *1단계 포인터 주소 검색 후 테이블로 내리기*
 
-> `018ECA20`을 검색하여 해당 값을 가리키는 주소를 찾고, 테이블로 내려 다음 단계로 진행합니다.
-{: .prompt-tip}
+찾은 포인터 주소 역시 테이블로 내린 뒤 다음 단계 포인터를 추적한다.
+
 ---
 
-### 4. 2단계 포인터 추적
-1단계 포인터 주소(`019648E0`)를 검색하여 다음 레벨 포인터를 찾습니다.
+## 4. 2단계 포인터 추적
 
-- 테이블에 추가된 주소 `019648E0`에서 `Find out what accesses this address`를 실행합니다.
-- **Change Value** 버튼을 클릭하면, `cmp dword ptr [esi],00` 명령어가 나타납니다.
-- `esi`의 값을 확인(예: `019648E0`)하고, 오프셋 `0x0`을 기록합니다.
+1단계 포인터에서 다시 **Find out what accesses this address**를 수행한다.
 
-![Step 8 2단계 포인터 추적](assets/img/CheatEngine/Step8/4.png)  
+<img src="assets/img/CheatEngine/Step8/4.png" width="55%" style="display:block; margin:0 auto;">
 *2단계 포인터 추적*
 
-> `cmp dword ptr [esi],00`은 `esi`가 가리키는 주소의 값을 비교하는 명령어입니다.<br>
-`esi`가 2단계 포인터이며, 다음 단계로 진행합니다.
-{: .prompt-tip}
+이제 두 번째 포인터가 어떤 주소를 가리키는지 확인할 수 있다.
+
 ---
 
-### 5. 2단계 포인터 주소 검색 및 테이블로 내리기
-2단계 포인터 주소(`019648E0`)를 검색하여 테이블로 내립니다.
+## 5. 2단계 포인터 주소 검색 및 테이블 등록
 
-- Cheat Engine에서 **Hex** 체크박스를 활성화하고, `esi` 값(`019648E0`)을 검색합니다.
-- 검색 결과에서 주소 `01977214`를 선택하고, 테이블로 내립니다.
+추적된 주소를 다시 Hex 검색하여 2단계 포인터 주소를 찾고 테이블에 추가한다.
 
-![Step 8 2단계 포인터 검색](assets/img/CheatEngine/Step8/5.png)  
+<img src="assets/img/CheatEngine/Step8/5.png" width="55%" style="display:block; margin:0 auto;">
 *2단계 포인터 주소 검색 후 테이블로 내리기*
 
-> `019648E0`을 검색하여 해당 값을 가리키는 주소를 찾고, 테이블로 내려 다음 단계로 진행합니다.
-{: .prompt-tip}
 ---
 
-### 6. 3단계 포인터 추적
-2단계 포인터 주소(`01977214`)를 검색하여 다음 레벨 포인터를 찾습니다.
+## 6. 3단계 포인터 추적
 
-- 테이블에 추가된 주소 `01977214`에서 `Find out what accesses this address`를 실행합니다.
-- **Change Value** 버튼을 클릭하면, `cmp dword ptr [esi+14],00` 명령어가 나타납니다.
-- `esi`의 값을 확인(예: `01977200`)하고, 오프셋 `0x14`를 기록합니다.
+2단계 포인터에 대해 다시 Find out what accesses this address 기능을 사용하여 3단계 포인터를 확인한다.
 
-![Step 8 3단계 포인터 추적](assets/img/CheatEngine/Step8/6.png)  
+<img src="assets/img/CheatEngine/Step8/6.png" width="55%" style="display:block; margin:0 auto;">
 *3단계 포인터 추적*
 
-> `cmp dword ptr [esi+14],00`은 `esi+0x14`가 가리키는 주소의 값을 비교하는 명령어입니다.<br>
-`esi`가 3단계 포인터입니다.
-{: .prompt-tip}
 ---
 
-### 7. 3단계 포인터 주소 검색 및 테이블로 내리기
-3단계 포인터 주소(`01977200`)를 검색하여 테이블로 내립니다.
+## 7. 3단계 포인터 주소 검색 및 테이블 추가
 
-- Cheat Engine에서 **Hex** 체크박스를 활성화하고, `esi` 값(`01977200`)을 검색합니다.
-- 검색 결과에서 주소 `0190B12C`를 선택하고, 테이블로 내립니다.
+Hex 검색을 통해 3단계 포인터 주소를 찾고 테이블에 추가한다.
 
-![Step 8 3단계 포인터 검색](assets/img/CheatEngine/Step8/7.png)  
+<img src="assets/img/CheatEngine/Step8/7.png" width="55%" style="display:block; margin:0 auto;">
 *3단계 포인터 주소 검색 후 테이블로 내리기*
 
-> `01977200`을 검색하여 해당 값을 가리키는 주소를 찾고, 테이블로 내려 다음 단계로 진행합니다.
-{: .prompt-tip}
 ---
 
-### 8. 4단계 포인터 추적
-3단계 포인터 주소(`0190B12C`)를 검색하여 다음 레벨 포인터를 찾습니다.
+## 8. 4단계 포인터 추적
 
-- 테이블에 추가된 주소 `0190B12C`에서 `Find out what accesses this address`를 실행합니다.
-- **Change Value** 버튼을 클릭하면, `cmp dword ptr [esi+0C],00` 명령어가 나타납니다.
-- `esi`의 값을 확인(예: `0190B120`)하고, 오프셋 `0x0C`를 기록합니다.
+3단계 포인터에서 다시 포인터 접근 정보를 확인하여 4단계 포인터를 찾는다.
 
-![Step 8 4단계 포인터 추적](assets/img/CheatEngine/Step8/8.png)  
+<img src="assets/img/CheatEngine/Step8/8.png" width="55%" style="display:block; margin:0 auto;">
 *4단계 포인터 추적*
 
-> `cmp dword ptr [esi+0C],00`은 `esi+0x0C`가 가리키는 주소의 값을 비교하는 명령어입니다.<br>
-`esi`가 4단계 포인터입니다.
-{: .prompt-tip}
+여기까지 추적했다면 거의 베이스 포인터에 도달한 상태다.
+
 ---
 
-### 9. 베이스 주소 도달 및 테이블로 내리기
-4단계 포인터 주소(`0190B120`)를 검색하여 베이스 주소를 찾습니다.
+## 9. 베이스 포인터 주소 검색 및 테이블 추가
 
-- Cheat Engine에서 **Hex** 체크박스를 활성화하고, `esi` 값(`0190B120`)을 검색합니다.
-- 검색 결과에서 정적 주소(예: `"Tutorial-i386.exe"+240690`)를 선택하고, 테이블로 내립니다.
+Hex 검색을 통해 베이스 포인터 주소를 찾고 테이블에 추가한다.
 
-![Step 8 베이스 주소 검색](assets/img/CheatEngine/Step8/9.png)  
+<img src="assets/img/CheatEngine/Step8/9.png" width="55%" style="display:block; margin:0 auto;">
 *베이스 주소 검색 후 테이블로 내리기*
 
-> 정적 주소에 도달하면 더 이상 포인터를 추적할 필요가 없습니다. 이제 포인터 경로를 구성합니다.
-{: .prompt-tip}
+이제 전체 포인터 체인 구성이 가능하다.
+
 ---
 
-### 10. 다중 포인터 경로 구성
-찾아낸 포인터와 오프셋을 사용하여 다중 포인터 경로를 구성합니다.
+## 10. 다중 포인터 경로 구성
 
-- "Add Address Manually"를 클릭하고, **Pointer** 체크박스를 선택합니다.
-- 베이스 주소(`"Tutorial-i386.exe"+240690`)와 각 레벨의 오프셋(`0x0C`, `0x14`, `0x0`, `0x18`)을 입력합니다.
-- 최종적으로 `P->018ECA38` 형태로 주소가 추가됩니다.
+지금까지 찾은 포인터들을 순서대로 연결하여 CE 테이블에 포인터 경로를 구성한다.
 
-![Step 8 포인터 경로 구성](assets/img/CheatEngine/Step8/10.png)  
+<img src="assets/img/CheatEngine/Step8/10.png" width="55%" style="display:block; margin:0 auto;">
 *다중 포인터 경로 구성*
 
-> 다중 포인터 경로를 구성하면 값의 위치가 변경되어도 올바른 주소를 추적할 수 있습니다.
-{: .prompt-tip}
+각 단계의 오프셋을 정확히 입력하면  어떤 상황에서도 항상 올바른 값에 접근할 수 있는 완전한 포인터 체인이 완성된다.
+
 ---
 
-### 11. 값 변경 및 고정
-구성한 포인터 경로의 값을 5000으로 변경하고 고정합니다.
+## 11. 값 변경 및 고정
 
-- 포인터 경로(`P->018ECA38`)의 값을 `5000`으로 변경합니다.
-- **Active**를 체크하여 값을 고정(freeze)합니다.
+마지막으로 값에 접근하여 원하는 값(예: 5000)으로 변경하고 Active 체크로 고정한다.
 
-![Step 8 값 변경 및 고정](assets/img/CheatEngine/Step8/11.png)  
+<img src="assets/img/CheatEngine/Step8/11.png" width="55%" style="display:block; margin:0 auto;">
 *값을 5000으로 변경하고 고정*
 
-> 값을 5000으로 고정하면 "Change Pointer" 버튼 클릭 후에도 값이 유지됩니다.
-{: .prompt-tip}
+이제 튜토리얼에서 Change pointer 버튼을 눌러도 포인터 체인이 자동으로 값을 추적하므로 값은 유지되고  
+Next 버튼이 활성화된다.
+
 ---
 
-## 결과
-포인터 경로를 구성하고 값을 5000으로 고정한 후, **Change Pointer** 버튼을 클릭하면 3초 후 "Next" 버튼이 활성화됩니다.<br>
+## 마무리
+
+Step 8은 여러 단계로 이어진 포인터 체인을 직접 따라가며  
+실제 프로그램이 어떤 구조로 값을 관리하는지 이해할 수 있는 중요한 단계다.  
+이 과정을 익히면 복잡한 게임 구조에서도 베이스 포인터와 오프셋 조합을 빠르게 파악할 수 있게 된다.
