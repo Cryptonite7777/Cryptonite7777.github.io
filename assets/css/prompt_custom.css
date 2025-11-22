@@ -1,9 +1,0 @@
-.prompt-success {
-    border-left: 4px solid #4a4b4a; /* 초록색 테두리 */
-    background-color: #505352; /* 연한 초록 배경 */
-    padding: 0.5em 1em;
-    margin: 1em 0;
-  }
-  .prompt-success p {
-    margin: 0;
-  }
