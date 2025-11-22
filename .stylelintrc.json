@@ -12,18 +12,16 @@
     "color-hex-length": "long",
     "declaration-block-single-line-max-declarations": 3,
     "scss/operator-no-newline-after": null,
-    "rule-empty-line-before": [
-      "always",
-      {
-        "ignore": ["after-comment", "first-nested"]
-      }
-    ],
     "value-keyword-case": [
       "lower",
       {
         "ignoreProperties": ["/^\\$/"]
       }
     ],
-    "media-feature-range-notation": "prefix"
+    "media-feature-range-notation": "prefix",
+
+    
+    "rule-empty-line-before": null,
+    "at-rule-empty-line-before": null
   }
 }
