@@ -1,0 +1,23 @@
+<div class="api-signature-box">
+
+  <div class="api-signature-header">
+    <span>C++</span>
+    <button class="copy-btn" onclick="copyApiSignature(this)">Copy</button>
+  </div>
+
+  <pre class="api-signature-content">
+{{ include.content }}
+  </pre>
+
+</div>
+
+<script>
+function copyApiSignature(btn) {
+    const code = btn.closest('.api-signature-box')
+                    .querySelector('.api-signature-content')
+                    .innerText;
+    navigator.clipboard.writeText(code);
+    btn.innerText = "Copied!";
+    setTimeout(()=>btn.innerText="Copy", 1300);
+}
+</script>

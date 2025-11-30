@@ -1,0 +1,47 @@
+.api-signature-box {
+  background: #18191c;
+  border: 1px solid #2b2d31;
+  border-radius: 10px;
+  max-width: 600px;
+  margin: 20px 0;
+  overflow-x: auto;
+}
+
+/* ✔ 헤더 영역 간격 대폭 축소 */
+.api-signature-header {
+  background: #2a313b;
+  padding: 4px 10px;        /* ← 기존 8px 12px → 줄임 */
+  border-bottom: 1px solid #2b2d31;
+  font-weight: 600;
+  color: #e8edf2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;          /* ← header 전체 크기도 더 compact */
+}
+
+/* 복사 버튼 */
+.api-signature-header .copy-btn {
+  background: #3b414b;
+  color: #dcdfe4;
+  border: none;
+  padding: 3px 6px;         /* ← 버튼도 더 작게 */
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.api-signature-header .copy-btn:hover {
+  background: #4b525c;
+}
+
+/* ✔ 코드 내부 위쪽 공백 제거 */
+.api-signature-content {
+  margin: 0;
+  padding: 6px 10px;        /* ← 기존 16px → 완전 축소 */
+  font-family: Consolas, monospace;
+  font-size: 14px;
+  color: #e4e4e4;
+  line-height: 1.35;        /* ← 줄 간격도 축소 */
+  white-space: pre;
+}
