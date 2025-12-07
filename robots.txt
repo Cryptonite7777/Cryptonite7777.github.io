@@ -1,5 +1,5 @@
 User-agent: *
-Disallow:
+Allow: /
 
 sitemap: https://cryptonite7777.github.io/sitemap.xml
 sitemap: https://Cryptonite7777.github.io/sitemap.xml
